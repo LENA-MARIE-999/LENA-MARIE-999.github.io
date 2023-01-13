@@ -1,0 +1,137 @@
+---
+title: "Exploración de las series más populares de Netflix"
+author: "Lena Baerwinkel"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: show
+    theme: hpstr
+    toc: yes
+    toc_float: yes
+    
+---
+
+```{r setup, include=FALSE}
+# load all packages
+library(tidyverse)
+library(naniar)
+library(gt)
+library(plotly)
+```
+## Introducción
+
+A mí me gustan mucho las series de Netflix. Pero hay muchísimas series, y la disponibilidad de las series de Netflix es diferente en cada país. Por esto decidí eplorar unos datos sobre las series de Netflix.
+
+## Cargar y editar los datos
+
+Primero, hay que cargar los datos. Ya están descargados, por eso sólo les cargo en la memoria.
+También voy a cambiar los nombres de las columnas para hacer la análisis un poco más fácil y borrar las películas del dataset. Tampoco me interesan las que son únicamente documentales. Además, quiro solo ver el primer genre. 
+```{r, include = FALSE}
+data <- read_csv("./datos/netflix-imdb.csv")
+colnames(data)[colnames(data) == "Series or Movie"] <- "type"
+
+data <- data %>% filter(type == "Series") %>% select(Title, Genre, Languages, `Country Availability`, `IMDb Score`, `IMDb Votes`, `Release Date`, `Netflix Release Date`) 
+
+colnames(data) <- c("Title", "Genre", "Languages", "Availability", "Score", "Votes", "Release", "NetRelease")
+
+data <- data %>% separate(Genre, c("Genre", "G2", "G3", "G4"), sep=",")
+data <- data %>% select(-c("G2", "G3", "G4"))%>% filter(Genre != "Documentary")
+
+```
+
+Antes de hacer el análisis, echaré un vistazo al dataset.
+```{r}
+str(data)
+head(data, n=5)
+```
+Veo que Release y NetRelease no son fechas pero characters. Al momento no me molesta, lo puedo cambiar más tarde.
+
+
+
+Quiero ver cuántos NA hay en cada variable. Si en una variable hay muchos NAs, puede interferiri con los resultados del análisis.
+```{r}
+naniar::gg_miss_var(data, show_pct = TRUE)
+```
+Como el score y los votos son importante para mi análisis, no usaré las filas en las cuales hay un NA en estos dos variables.
+
+```{r}
+data <- data %>% tidyr::drop_na(c(Votes, Score))
+```
+
+
+Cómo unos series tienen muy pocas votes, les voy a eliminar del dataset.
+```{r}
+data %>% summary()
+```
+El 1st Qu, es 211, así eliminaré los series que tienen menos votes que este número. 
+
+```{r}
+data <- data %>% filter(Votes >=211)
+```
+
+
+## Qué son las series más populares?
+
+Ahore me interesa qué son las series más populares/ con el mejor rating.
+```{r}
+a <- data %>% arrange(desc(Score))%>% slice(1:30) %>% select(Title, Genre, Score)
+table <- a %>% gt()
+table <- table %>% tab_header(title = md("**Las 30 Series mas populares**"), 
+                              subtitle = md("Segun su score en *IMbd*")) 
+table
+```
+No conozco muchos de estas series, que raro.
+
+## Qué son las genres más populares?
+
+```{r}
+ggplot(data, aes(x=reorder(Genre,Score, mean),y=Score))+geom_boxplot(aes(fill=Genre))+coord_flip()+geom_jitter(width=0.15, alpha = 1/3, color = "darkgreen")+labs(title="Las diferentes genres ordenado por la media del Score", x="Score", y="Genre")
+```
+
+## Hay algunas series que tienen mas series que son mal que bueno?
+
+
+Ahora divido las series entre Good y Bad, dependiente de si su Score es mejor que un 7.5.
+
+
+
+```{r}
+data$Rating <- ifelse(data$Score>=7.5, "Good", "Bad")
+a <- data %>% group_by(Genre, Rating)%>% summarize(NN = n())
+a <- pivot_wider(a, names_from = Rating, values_from = NN, values_fill = 0)
+a <- a %>% mutate(Net = Good-Bad)
+table <- a %>% gt()
+table <- table %>% tab_header(title = md("**Hay categorias con mas Bad series que Good?**"), 
+                              subtitle = md("Parece que *si*")) 
+table
+```
+Parece que en algunas categorás hay más "Bad" series que "Good".
+
+
+
+```{r}
+g <- data %>% arrange(desc(Score))%>% slice(1:500)%>% group_by(Genre)%>% summarize(number = n())
+g <- g %>% mutate(percent = number/500*100)
+
+b <- data %>% arrange(desc(Score)) %>% slice(500:nrow(data))%>% group_by(Genre)%>% summarize(number = n())
+b <- b %>% mutate(percent = number/500*100)
+
+
+
+```
+
+
+
+
+```{r}
+a <- data %>% group_by(Genre)%>% summarize(number = n())
+
+p <- plot_ly(a, labels = ~Genre, values = ~number, type = 'pie',textposition = 'outside',textinfo = 'label+percent') %>%
+  layout(title = 'Letters',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+p
+```
+
+
+

@@ -1,0 +1,62 @@
+project:                
+  type: website          
+  output-dir: docs        #- NO TOCAR: carpeta donde se redirige el output
+  
+website:
+  title: "Trabajo Big Data"
+  favicon: netflix.jpg
+  # site-url: https://LENA-MARIE-999.github.io/            #- hay que rellenarlos
+  # repo-url: https://....
+  # repo-actions: [edit, issue]
+  search:   
+    location: navbar
+    type: overlay   
+    copy-button: true
+  navbar:
+    logo: "netflix.jpg"           #---
+    #background: "#444444"    #- color de la navbar
+    #foreground: "#FF0000"    #- color navigation elements, text and links that appear in the navbar.
+    left: 
+      - icon: house-door
+        href: index.html
+    right:
+      - text: "Trabajo"   #---
+        href: my_trabajo_BigData.qmd   
+      - icon: github
+        href: https://github.com/<LENA-MARIE-999>    #---
+      - icon: envelope
+        url: "mailto:<bale@alumni.uv.es>"            #---
+  page-footer:
+    border: true
+    background: "#e66b63"
+    left: "© 2022 Lena Baerwinkel"   #----
+    center: "Hecho con [Quarto](https://quarto.org)"
+    right:
+      - icon: github
+        href: https://github.com/<LENA-MARIE-999>    #----
+      - icon: envelope
+        url: "mailto:bale@alumni.uv.es"            #-----
+    
+format:
+  html:
+    theme: flatly           #---
+    highlight-style: a11y   #---
+    css: my_styles.css   
+    page-layout: full
+    toc: true
+    code-copy: true
+    code-overflow: wrap    #- {wrap, scroll}
+    
+
+# Enable CC licence appendix
+license: "CC BY"
+
+lang: es   #- {es, en}
+
+
+# Default execute options
+execute:
+  echo: true
+  message: false
+  warning: false
+  eval: true
